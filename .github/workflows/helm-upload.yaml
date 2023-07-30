@@ -1,0 +1,58 @@
+name: Helm Deploy
+
+on:
+  workflow_call:
+    secrets:
+      HELM_USER:
+        required: true
+      HELM_PASSWORD:
+        required: true
+    
+    inputs:
+      helm_repo_url:
+        required: false
+        type: string
+        default: "https://chartmuseum.jonpark.codes/"
+      helm_repo_name:
+        required: false
+        type: string
+        default: "risk-demo"
+      
+
+jobs:
+  helm:
+    name: "Package and push helm chart to chartmuseum"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            helm:
+              - 'helm/**'
+
+      - name: Helm Repo Add
+        if: steps.filter.outputs.helm == 'true'
+        run: helm repo add ${{ inputs.argo_repo_name }} ${{ inputs.argo_repo_url }} --username ${{ secrets.HELM_USER }} --password ${{ secrets.HELM_PASSWORD }}
+
+      - name: Package Helm
+        if: steps.filter.outputs.helm == 'true'
+        run: helm package ./helm -u -d helm
+
+      - name: Helm Token
+        if: steps.filter.outputs.helm == 'true'
+        run: echo "HELM_TOKEN=`echo -n ${{ secrets.HELM_USER }}:${{ secrets.HELM_PASSWORD }} | base64 -w 0`"  >> $GITHUB_ENV
+
+      - name: Upload Helm
+        if: steps.filter.outputs.helm == 'true'
+        run: |
+          curl -is "${{ inputs.helm_repo_url }}api/charts" \
+          --header "Authorization: Basic ${{ env.HELM_TOKEN }}" \
+          --data-binary @$(find helm/*.tgz)
+
+      - name: Cleanup
+        if: steps.filter.outputs.helm == 'true'
+        run: rm helm/*.tgz

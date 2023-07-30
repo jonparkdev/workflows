@@ -1,0 +1,69 @@
+name: ArgoCD Deployment
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: false
+        type: string
+        default: "dev"
+      deployment:
+        required: false 
+        type: string
+        default: "deployments/application-plane"
+      chart_version:
+        required: false 
+        type: string
+        default: ""
+      name:
+        required: true
+        type: string
+      branch:
+        required: false
+        default: "main"
+        type: string
+      argo_repository:
+        required: false
+        type: string
+        default: "risk-demo"
+
+    secrets:
+      token:
+        required: true
+
+jobs:
+  deploy:
+    name: Push docker image tag (short sha) to argocd for deployment
+    runs-on: ubuntu-latest
+
+    steps:
+    
+    - uses: actions/checkout@v3
+      with:
+        repository: jonparkdev/${{ inputs.argo_repository }}
+        token: ${{ secrets.token }}
+        ref: ${{ inputs.branch }}
+
+    - name: Get tag sha
+      run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+
+    - name: Ensure folder exists
+      run: |
+        if [[ ! -d ${{ inputs.deployment }}/${{ inputs.name }} ]]; then
+          echo "deployment doesn't exist"
+          exit 1
+        fi
+
+    - name: Update image tag
+      run: yq -i eval '.${{ inputs.name }}.image.tag = ("sha-${SHORT_SHA}" | envsubst)' ${{ inputs.deployment }}/${{ inputs.name }}/values.yaml
+
+    - name: Update chart version
+      if: "${{ inputs.chart_version != '' }}"
+      run: yq -i eval '(.dependencies[] | select(has("name") or has("alias")) | select(.name == "${{ inputs.name }}" or .alias == "${{ inputs.name }}")).version = "${{ inputs.chart_version }}"' ${{ inputs.deployment }}/${{ inputs.name }}/Chart.yaml
+
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "Deploy ${{ inputs.name }} to ${{ inputs.deployment }} - sha-${{ env.SHORT_SHA }}"
+        commit_user_name: "jonpark-bot"
+        commit_user_email: "jon@jonathanpark.ca"
+        commit_author: "Jon Park <jon@jonathanpark.ca>"
