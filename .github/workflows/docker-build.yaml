@@ -35,7 +35,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: | 
-            hub.docker.com/jonparkdev/${{ inputs.name }}
+            jonparkdev/${{ inputs.name }}
           tags: |
             type=raw,latest
             type=sha
