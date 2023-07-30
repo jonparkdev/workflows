@@ -36,7 +36,7 @@ jobs:
 
       - name: Helm Repo Add
         if: steps.filter.outputs.helm == 'true'
-        run: helm repo add ${{ inputs.argo_repo_name }} ${{ inputs.argo_repo_url }} --username ${{ secrets.HELM_USER }} --password ${{ secrets.HELM_PASSWORD }}
+        run: helm repo add ${{ inputs.helm_repo_name }} ${{ inputs.helm_repo_url }} --username ${{ secrets.HELM_USER }} --password ${{ secrets.HELM_PASSWORD }}
 
       - name: Package Helm
         if: steps.filter.outputs.helm == 'true'
