@@ -7,17 +7,7 @@ on:
         required: true
       HELM_PASSWORD:
         required: true
-    
-    inputs:
-      helm_repo_url:
-        required: false
-        type: string
-        default: "https://chartmuseum.jonpark.codes/"
-      helm_repo_name:
-        required: false
-        type: string
-        default: "risk-demo"
-      
+
 
 jobs:
   helm:
@@ -36,7 +26,7 @@ jobs:
 
       - name: Helm Repo Add
         if: steps.filter.outputs.helm == 'true'
-        run: helm repo add ${{ inputs.helm_repo_name }} ${{ inputs.helm_repo_url }} --username ${{ secrets.HELM_USER }} --password ${{ secrets.HELM_PASSWORD }}
+        run: helm repo add blue-team-helm https://chartmuseum.jonathanpark.ca/ --username ${{ secrets.HELM_USER }} --password ${{ secrets.HELM_PASSWORD }}
 
       - name: Package Helm
         if: steps.filter.outputs.helm == 'true'
@@ -49,7 +39,7 @@ jobs:
       - name: Upload Helm
         if: steps.filter.outputs.helm == 'true'
         run: |
-          curl -is "${{ inputs.helm_repo_url }}api/charts" \
+          curl -is "https://chartmuseum.jonathanpark.ca/api/charts" \
           --header "Authorization: Basic ${{ env.HELM_TOKEN }}" \
           --data-binary @$(find helm/*.tgz)
 
