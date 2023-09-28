@@ -10,7 +10,7 @@ on:
       deployment:
         required: false 
         type: string
-        default: "deployments/application-plane"
+        default: "helm"
       chart_version:
         required: false 
         type: string
